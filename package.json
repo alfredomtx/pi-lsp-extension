@@ -15,7 +15,9 @@
   "scripts": {
     "clean": "echo 'nothing to clean'",
     "build": "echo 'nothing to build'",
-    "check": "echo 'nothing to check'"
+    "check": "tsc --noEmit",
+    "mcp": "tsx ./src/mcp-server.ts",
+    "activix:run": "node ./scripts/activix-run-summary.mjs"
   },
   "pi": {
     "extensions": [
@@ -23,7 +25,11 @@
     ]
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@vue/language-server": "^3.3.3",
+    "intelephense": "^1.18.4",
     "tree-sitter-wasms": "^0.1.13",
+    "typescript-language-server": "^5.3.0",
     "vscode-languageserver-protocol": "^3.17.5",
     "web-tree-sitter": "^0.24.7"
   },
@@ -34,6 +40,7 @@
     "@sinclair/typebox": "*"
   },
   "devDependencies": {
-    "typescript": "^5.5.0"
+    "tsx": "^4.22.4",
+    "typescript": "^5.9.3"
   }
 }

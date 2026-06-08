@@ -105,6 +105,17 @@ const RUBY_SYMBOLS: SymbolMapping[] = [
   { nodeType: "module", kind: SymbolKind.Module, recurse: true },
 ];
 
+const PHP_SYMBOLS: SymbolMapping[] = [
+  { nodeType: "class_declaration", kind: SymbolKind.Class, recurse: true },
+  { nodeType: "interface_declaration", kind: SymbolKind.Interface, recurse: true },
+  { nodeType: "trait_declaration", kind: SymbolKind.Class, recurse: true },
+  { nodeType: "enum_declaration", kind: SymbolKind.Enum, recurse: true },
+  { nodeType: "method_declaration", kind: SymbolKind.Method },
+  { nodeType: "function_definition", kind: SymbolKind.Function },
+  { nodeType: "property_declaration", kind: SymbolKind.Field },
+  { nodeType: "const_declaration", kind: SymbolKind.Constant },
+];
+
 const LANGUAGE_SYMBOLS: Record<string, SymbolMapping[]> = {
   typescript: TS_JS_SYMBOLS,
   typescriptreact: TS_JS_SYMBOLS,
@@ -117,6 +128,7 @@ const LANGUAGE_SYMBOLS: Record<string, SymbolMapping[]> = {
   c: C_CPP_SYMBOLS,
   cpp: C_CPP_SYMBOLS,
   ruby: RUBY_SYMBOLS,
+  php: PHP_SYMBOLS,
 };
 
 /**
@@ -210,6 +222,12 @@ function extractName(node: Node, mapping: SymbolMapping, languageId: string): st
     }
     case "const_declaration":
     case "var_declaration": {
+      if (languageId === "php" && node.type === "const_declaration") {
+        // PHP: const FOO = 'bar'
+        const constElement = node.namedChildren.find((c) => c.type === "const_element");
+        const name = constElement?.namedChildren.find((c) => c.type === "name");
+        return name?.text ?? null;
+      }
       // Go: const/var declarations
       const spec = node.namedChildren.find(
         (c) => c.type === "const_spec" || c.type === "var_spec"
@@ -219,6 +237,12 @@ function extractName(node: Node, mapping: SymbolMapping, languageId: string): st
         return n?.text ?? null;
       }
       return null;
+    }
+    case "property_declaration": {
+      // PHP: private $foo, public string $bar
+      const property = node.namedChildren.find((c) => c.type === "property_element");
+      const variable = property?.namedChildren.find((c) => c.type === "variable_name");
+      return variable?.text ?? null;
     }
     case "field_declaration": {
       // Java: field declarations
@@ -382,9 +406,10 @@ export function getEnclosingDeclaration(tree: Tree, line: number, character: num
     "function_declaration", "function_definition", "function_item",
     "method_declaration", "method_definition",
     "class_declaration", "class_definition", "class_specifier",
-    "interface_declaration", "enum_declaration", "enum_item",
+    "interface_declaration", "trait_declaration", "enum_declaration", "enum_item",
     "struct_item", "impl_item", "trait_item", "mod_item",
     "type_alias_declaration", "type_declaration",
+    "property_declaration", "const_declaration",
     "variable_declarator", "lexical_declaration",
     "const_item", "static_item",
     "decorated_definition",
