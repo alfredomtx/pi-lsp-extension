@@ -1,19 +1,19 @@
-# Hermes LSP MCP adapter
+# Activix LSP MCP adapter
 
 Read-only MCP adapter around the Pi LSP core. Default target workspace is Activix CRM.
 
 ## Start command
 
-Hermes config should point at:
+Pi MCP config should point at:
 
 ```bash
-/Users/atorres/Documents/GitHub/configs/pi/extensions/pi-lsp-extension/scripts/hermes-lsp-mcp.sh
+/Users/atorres/Documents/GitHub/configs/pi/extensions/pi-lsp-extension/scripts/activix-lsp-mcp.sh
 ```
 
 The wrapper sets:
 
-- `HERMES_LSP_DEFAULT_ROOT=/Users/atorres/Documents/GitHub/activix-crm`
-- Node 22 from nvm
+- `ACTIVIX_LSP_DEFAULT_ROOT=/Users/atorres/Documents/GitHub/activix-crm`
+- Node from `PATH`, or `ACTIVIX_LSP_NODE_BIN`
 - local `node_modules/.bin` for language servers
 
 ## Tools
@@ -38,9 +38,9 @@ Activix helpers:
 
 The MCP server has three timeout layers:
 
-- language-server startup timeout: `HERMES_LSP_START_TIMEOUT_MS`, default `15000`
-- per-LSP-request timeout: `HERMES_LSP_REQUEST_TIMEOUT_MS`, default `15000`
-- whole-tool timeout: `HERMES_LSP_TOOL_TIMEOUT_MS`, default `30000`
+- language-server startup timeout: `ACTIVIX_LSP_START_TIMEOUT_MS`, default `15000`
+- per-LSP-request timeout: `ACTIVIX_LSP_REQUEST_TIMEOUT_MS`, default `15000`
+- whole-tool timeout: `ACTIVIX_LSP_TOOL_TIMEOUT_MS`, default `30000`
 
 Vue document-symbol failures fall back to parsing the `<script>` block with tree-sitter.
 
@@ -53,7 +53,7 @@ npm run activix:run -- ./activix test tests/Feature/ExampleTest.php
 npm run activix:run -- npm run check
 ```
 
-Full logs go under `.hermes/logs/`. Set `ACTIVIX_RUN_SUMMARY_PASSTHROUGH=1` to stream raw command output too.
+Full logs go under `.activix/logs/`. Set `ACTIVIX_RUN_SUMMARY_PASSTHROUGH=1` to stream raw command output too.
 
 ## Verification
 
@@ -61,8 +61,7 @@ Run:
 
 ```bash
 PATH=/Users/atorres/.nvm/versions/node/v22.22.0/bin:$PATH npm run check
-hermes mcp test activix_lsp
-scripts/test-hermes-lsp-mcp.sh
+scripts/test-activix-lsp-mcp.sh
 ```
 
-After adding/removing MCP tools, restart the Hermes gateway so the chat tool schema refreshes.
+After adding/removing MCP tools, restart the Pi MCP client so the tool schema refreshes.

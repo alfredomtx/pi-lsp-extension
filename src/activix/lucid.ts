@@ -21,7 +21,7 @@ interface ReferenceHit {
 
 const EXCLUDED_DIRS = new Set([
   ".git",
-  ".hermes",
+  ".activix",
   ".idea",
   ".vscode",
   "bootstrap/cache",

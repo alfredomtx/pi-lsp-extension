@@ -22,7 +22,7 @@ if (!command) {
 }
 
 const cwd = process.cwd();
-const logDir = resolve(cwd, ".hermes", "logs");
+const logDir = resolve(cwd, ".activix", "logs");
 mkdirSync(logDir, { recursive: true });
 const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 const safeName = basename(command).replace(/[^A-Za-z0-9_.-]/g, "_");

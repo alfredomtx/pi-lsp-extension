@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Hermes-compatible MCP adapter for the Pi LSP core.
+ * Activix MCP adapter for the Pi LSP core.
  *
  * Read-only first version: status, warmup, diagnostics, symbols, definition,
  * references, hover, and a tree-sitter file overview.
@@ -40,11 +40,11 @@ const PACKAGE_ROOT = resolve(__dirname, "..");
 const LOCAL_BIN = join(PACKAGE_ROOT, "node_modules", ".bin");
 process.env.PATH = [LOCAL_BIN, process.env.PATH ?? ""].filter(Boolean).join(delimiter);
 
-const DEFAULT_ROOT = process.env.HERMES_LSP_DEFAULT_ROOT || process.argv[2] || process.cwd();
-const DEFAULT_TIMEOUT_MS = Number(process.env.HERMES_LSP_START_TIMEOUT_MS || 15_000);
-const REQUEST_TIMEOUT_MS = Number(process.env.HERMES_LSP_REQUEST_TIMEOUT_MS || 15_000);
-const TOOL_TIMEOUT_MS = Number(process.env.HERMES_LSP_TOOL_TIMEOUT_MS || 30_000);
-const DIAGNOSTIC_SETTLE_MS = Number(process.env.HERMES_LSP_DIAGNOSTIC_SETTLE_MS || 900);
+const DEFAULT_ROOT = process.env.ACTIVIX_LSP_DEFAULT_ROOT || process.argv[2] || process.cwd();
+const DEFAULT_TIMEOUT_MS = Number(process.env.ACTIVIX_LSP_START_TIMEOUT_MS || 15_000);
+const REQUEST_TIMEOUT_MS = Number(process.env.ACTIVIX_LSP_REQUEST_TIMEOUT_MS || 15_000);
+const TOOL_TIMEOUT_MS = Number(process.env.ACTIVIX_LSP_TOOL_TIMEOUT_MS || 30_000);
+const DIAGNOSTIC_SETTLE_MS = Number(process.env.ACTIVIX_LSP_DIAGNOSTIC_SETTLE_MS || 900);
 const MAX_LINES = 120;
 const MAX_BYTES = 20_000;
 
@@ -135,7 +135,7 @@ function getWorkspace(rootArg?: unknown): WorkspaceState {
     manager: new LspManager(root, serverConfigs()),
     treeSitter,
     treeSitterInit: treeSitter.init().catch((err) => {
-      console.error(`[hermes-lsp] tree-sitter init failed: ${err?.message ?? err}`);
+      console.error(`[activix-lsp] tree-sitter init failed: ${err?.message ?? err}`);
     }),
     workspaceIndex: new WorkspaceIndex(root, treeSitter),
     opened: new Map(),
@@ -465,7 +465,7 @@ async function toolSymbols(args: Record<string, unknown>): Promise<TextResult> {
           return toolText(`${lines.length} symbol(s) in ${rel(state, absPath)}\n\n${truncate(lines.join("\n"))}`);
         }
       } catch (err: any) {
-        console.error(`[hermes-lsp] document symbols failed for ${rel(state, absPath)}: ${err?.message ?? err}`);
+        console.error(`[activix-lsp] document symbols failed for ${rel(state, absPath)}: ${err?.message ?? err}`);
       }
     }
     return treeFileOverview(state, absPath);
@@ -482,7 +482,7 @@ async function toolSymbols(args: Record<string, unknown>): Promise<TextResult> {
         return toolText(`${result.length} workspace symbol(s) for "${query}" [${language}]\n\n${truncate(lines.join("\n"))}`);
       }
     } catch (err: any) {
-      console.error(`[hermes-lsp] workspace symbols failed for ${language}: ${err?.message ?? err}`);
+      console.error(`[activix-lsp] workspace symbols failed for ${language}: ${err?.message ?? err}`);
     }
   }
   await state.treeSitterInit;
@@ -714,7 +714,7 @@ const tools = [
 ];
 
 const server = new Server(
-  { name: "hermes-lsp", version: "0.1.0" },
+  { name: "activix-lsp", version: "0.1.0" },
   { capabilities: { tools: {} } },
 );
 

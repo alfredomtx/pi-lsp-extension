@@ -3,8 +3,8 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const pkg = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
-const root = process.env.HERMES_LSP_DEFAULT_ROOT || "/Users/atorres/Documents/GitHub/activix-crm";
-const node = "/Users/atorres/.nvm/versions/node/v22.22.0/bin/node";
+const root = process.env.ACTIVIX_LSP_DEFAULT_ROOT || "/Users/atorres/Documents/GitHub/activix-crm";
+const node = process.execPath;
 const tsx = `${pkg}/node_modules/tsx/dist/cli.mjs`;
 const server = `${pkg}/src/mcp-server.ts`;
 const expectedTools = new Set([
@@ -32,7 +32,7 @@ transport.stderr?.on("data", chunk => {
   if (text) process.stderr.write(`[mcp-server] ${text}\n`);
 });
 
-const client = new Client({ name: "hermes-lsp-smoke", version: "0.1.0" });
+const client = new Client({ name: "activix-lsp-smoke", version: "0.1.0" });
 
 try {
   await withTimeout(client.connect(transport), 20_000, "connect");

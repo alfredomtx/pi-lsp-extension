@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="${HERMES_LSP_DEFAULT_ROOT:-/Users/atorres/Documents/GitHub/activix-crm}"
+ROOT="${ACTIVIX_LSP_DEFAULT_ROOT:-/Users/atorres/Documents/GitHub/activix-crm}"
 PKG="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-NODE_BIN="/Users/atorres/.nvm/versions/node/v22.22.0/bin"
+NODE_BIN="${ACTIVIX_LSP_NODE_BIN:-$(dirname "$(command -v node || echo /usr/bin/node)")}"
 export PATH="$NODE_BIN:$PKG/node_modules/.bin:${PATH:-/usr/bin:/bin:/usr/sbin:/sbin}"
-export HERMES_LSP_DEFAULT_ROOT="$ROOT"
-export HERMES_LSP_START_TIMEOUT_MS="${HERMES_LSP_START_TIMEOUT_MS:-15000}"
-export HERMES_LSP_REQUEST_TIMEOUT_MS="${HERMES_LSP_REQUEST_TIMEOUT_MS:-15000}"
-export HERMES_LSP_TOOL_TIMEOUT_MS="${HERMES_LSP_TOOL_TIMEOUT_MS:-30000}"
+export ACTIVIX_LSP_DEFAULT_ROOT="$ROOT"
+export ACTIVIX_LSP_START_TIMEOUT_MS="${ACTIVIX_LSP_START_TIMEOUT_MS:-15000}"
+export ACTIVIX_LSP_REQUEST_TIMEOUT_MS="${ACTIVIX_LSP_REQUEST_TIMEOUT_MS:-15000}"
+export ACTIVIX_LSP_TOOL_TIMEOUT_MS="${ACTIVIX_LSP_TOOL_TIMEOUT_MS:-30000}"
 
 cd "$PKG"
 BEFORE_MCP_PIDS="$(pgrep -f "mcp-server.ts|tsx/dist/cli.mjs .*mcp-server" 2>/dev/null || true)"
@@ -16,11 +16,8 @@ BEFORE_MCP_PIDS="$(pgrep -f "mcp-server.ts|tsx/dist/cli.mjs .*mcp-server" 2>/dev
 echo "== TypeScript check =="
 npm run check
 
-echo "== Hermes MCP discovery =="
-hermes mcp test activix_lsp
-
 echo "== Programmatic MCP smoke =="
-node scripts/test-hermes-lsp-mcp.mjs
+node scripts/test-activix-lsp-mcp.mjs
 
 echo "== Orphan process check =="
 AFTER_MCP_PIDS="$(pgrep -f "mcp-server.ts|tsx/dist/cli.mjs .*mcp-server" 2>/dev/null || true)"

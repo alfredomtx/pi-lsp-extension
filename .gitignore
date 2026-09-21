@@ -3,4 +3,4 @@ dist/
 *.js
 *.d.ts
 *.map
-.hermes/
+.activix/
