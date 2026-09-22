@@ -19,9 +19,9 @@ import type {
   WorkspaceSymbol,
 } from "vscode-languageserver-protocol";
 import { DiagnosticSeverity, SymbolKind } from "vscode-languageserver-protocol";
-import { readFile } from "node:fs/promises";
+import { readFile, realpath } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { delimiter } from "node:path";
 
@@ -149,12 +149,18 @@ function rel(state: WorkspaceState, absOrRel: string): string {
   return relative(state.root, abs) || ".";
 }
 
-function normalizePath(state: WorkspaceState, filePath: unknown): string {
+async function normalizePath(state: WorkspaceState, filePath: unknown): Promise<string> {
   if (typeof filePath !== "string" || !filePath.trim()) {
     throw new Error("path is required");
   }
   const clean = filePath.trim().replace(/^@/, "");
-  return isAbsolute(clean) ? clean : resolve(state.root, clean);
+  const target = isAbsolute(clean) ? resolve(clean) : resolve(state.root, clean);
+  const [rootRealPath, targetRealPath] = await Promise.all([realpath(state.root), realpath(target)]);
+  const relativePath = relative(rootRealPath, targetRealPath);
+  if (relativePath === ".." || relativePath.startsWith(`..${sep}`) || isAbsolute(relativePath)) {
+    throw new Error(`path escapes workspace root: ${filePath}`);
+  }
+  return target;
 }
 
 function toolText(text: string, isError = false): TextResult {
@@ -408,7 +414,7 @@ async function toolDiagnostics(args: Record<string, unknown>): Promise<TextResul
   const path = String(args.path ?? "*");
   if (path === "*" || path === "") return workspaceDiagnostics(state);
 
-  const absPath = normalizePath(state, path);
+  const absPath = await normalizePath(state, path);
   const client = await getReadyClientForFile(state, absPath);
   if (!client) return toolText(state.manager.getUnavailableReason(absPath), true);
 
@@ -450,7 +456,7 @@ async function toolSymbols(args: Record<string, unknown>): Promise<TextResult> {
   const state = getWorkspace(args.root);
   const query = typeof args.query === "string" ? args.query : undefined;
   if (args.path) {
-    const absPath = normalizePath(state, args.path);
+    const absPath = await normalizePath(state, args.path);
     const client = await getReadyClientForFile(state, absPath);
     if (client) {
       try {
@@ -526,23 +532,25 @@ async function treeFileOverview(state: WorkspaceState, absPath: string): Promise
 
 async function toolOverview(args: Record<string, unknown>): Promise<TextResult> {
   const state = getWorkspace(args.root);
-  const absPath = normalizePath(state, args.path);
+  const absPath = await normalizePath(state, args.path);
   return treeFileOverview(state, absPath);
 }
 
 async function toolActivixInspect(args: Record<string, unknown>): Promise<TextResult> {
   const state = getWorkspace(args.root);
-  return toolText(truncate(await inspectLucid(state.root, args), 160, 30_000));
+  const targetArgs = args.path ? { ...args, path: await normalizePath(state, args.path) } : args;
+  return toolText(truncate(await inspectLucid(state.root, targetArgs), 160, 30_000));
 }
 
 async function toolActivixBlastRadius(args: Record<string, unknown>): Promise<TextResult> {
   const state = getWorkspace(args.root);
-  return toolText(truncate(await blastRadius(state.root, args), 180, 35_000));
+  const targetArgs = args.path ? { ...args, path: await normalizePath(state, args.path) } : args;
+  return toolText(truncate(await blastRadius(state.root, targetArgs), 180, 35_000));
 }
 
 async function toolDefinition(args: Record<string, unknown>): Promise<TextResult> {
   const state = getWorkspace(args.root);
-  const absPath = normalizePath(state, args.path);
+  const absPath = await normalizePath(state, args.path);
   const client = await getReadyClientForFile(state, absPath);
   if (!client) return toolText(state.manager.getUnavailableReason(absPath), true);
   const { position, resolvedFrom } = await resolvePositionArgs(state, absPath, args);
@@ -561,7 +569,7 @@ async function toolDefinition(args: Record<string, unknown>): Promise<TextResult
 
 async function toolReferences(args: Record<string, unknown>): Promise<TextResult> {
   const state = getWorkspace(args.root);
-  const absPath = normalizePath(state, args.path);
+  const absPath = await normalizePath(state, args.path);
   const client = await getReadyClientForFile(state, absPath);
   if (!client) return toolText(state.manager.getUnavailableReason(absPath), true);
   const { position, resolvedFrom } = await resolvePositionArgs(state, absPath, args);
@@ -580,7 +588,7 @@ async function toolReferences(args: Record<string, unknown>): Promise<TextResult
 
 async function toolHover(args: Record<string, unknown>): Promise<TextResult> {
   const state = getWorkspace(args.root);
-  const absPath = normalizePath(state, args.path);
+  const absPath = await normalizePath(state, args.path);
   const client = await getReadyClientForFile(state, absPath);
   if (!client) return toolText(state.manager.getUnavailableReason(absPath), true);
   const { position, resolvedFrom } = await resolvePositionArgs(state, absPath, args);

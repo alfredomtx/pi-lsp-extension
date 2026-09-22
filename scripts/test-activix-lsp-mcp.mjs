@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const pkg = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
 const root = process.env.ACTIVIX_LSP_DEFAULT_ROOT || "/Users/atorres/Documents/GitHub/activix-crm";
@@ -57,6 +60,22 @@ try {
   const phpOverview = await call("overview", { root, path: phpFile });
   assertIncludes(phpOverview, "symbol(s)", "php overview symbols");
 
+  const boundaryTemp = await mkdtemp(join(tmpdir(), "activix-lsp-boundary-"));
+  try {
+    const boundaryRoot = join(boundaryTemp, "workspace");
+    const outsideFile = join(boundaryTemp, "OutsideProbe.php");
+    await mkdir(boundaryRoot);
+    await writeFile(outsideFile, "<?php\nclass OutsideProbe {}\n");
+    await symlink(outsideFile, join(boundaryRoot, "outside-link.php"));
+    const outsideArgs = { root: boundaryRoot, path: "../OutsideProbe.php" };
+    await assertToolError("overview", outsideArgs, "path escapes workspace root", "traversal path rejected");
+    await assertToolError("overview", { root: boundaryRoot, path: outsideFile }, "path escapes workspace root", "absolute path rejected");
+    await assertToolError("overview", { root: boundaryRoot, path: "outside-link.php" }, "path escapes workspace root", "symlink escape rejected");
+    await assertToolError("activix_inspect", outsideArgs, "path escapes workspace root", "inspect traversal rejected");
+  } finally {
+    await rm(boundaryTemp, { recursive: true, force: true });
+  }
+
   const phpSymbols = await call("symbols", { root, path: phpFile });
   assertIncludes(phpSymbols, "symbol(s)", "php document symbols");
 
@@ -85,6 +104,17 @@ try {
   console.log("smoke: ok");
 } finally {
   await client.close().catch(() => {});
+}
+
+async function assertToolError(name, args, expected, label) {
+  const result = await withTimeout(client.callTool({ name, arguments: args }), 35_000, name);
+  const text = (result.content ?? [])
+    .filter(part => part.type === "text")
+    .map(part => part.text)
+    .join("\n");
+  if (!result.isError || !text.includes(expected)) {
+    throw new Error(`${label}: expected MCP error containing ${JSON.stringify(expected)}, got:\n${text}`);
+  }
 }
 
 async function call(name, args) {
